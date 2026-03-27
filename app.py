@@ -15,29 +15,31 @@ YOUTUBE_API_KEY = "AIzaSyCtRmuczhLVye3FA7c3j1wvfjXoykoyg_g"  # YouTube Data API 
 BASE_URL = "http://www.omdbapi.com/"
 PLACEHOLDER = "https://via.placeholder.com/500x750?text=No+Poster"
 # ----------------- LOAD DATA -----------------
+import pickle
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+# ----------------- LOAD DATA -----------------
 def load_data():
-    # Load the processed dataframe (should contain 'movie_id', 'title', 'tags')
+    # Load movies DataFrame
     movies = pickle.load(open('data/movie_list.pkl', 'rb'))
 
-    # Check if 'tags' column exists; if not, create it from available columns
+    # Ensure 'tags' column exists
     if 'tags' not in movies.columns:
-        # Replace with your actual feature columns
-        feature_cols = []
-        for col in ['genres', 'cast', 'description']:  # adjust these to match your DataFrame
-            if col in movies.columns:
-                feature_cols.append(col)
+        feature_cols = [col for col in ['genres', 'cast', 'description'] if col in movies.columns]
         if feature_cols:
             movies['tags'] = movies[feature_cols].fillna('').agg(' '.join, axis=1)
         else:
-            movies['tags'] = movies['title'].fillna('')  # fallback if no other columns
+            movies['tags'] = movies['title'].fillna('')
 
-    # Generate similarity matrix
+    # Compute similarity matrix dynamically
     cv = CountVectorizer(max_features=5000, stop_words='english')
     vector = cv.fit_transform(movies['tags']).toarray()
     similarity = cosine_similarity(vector)
 
     return movies, similarity
 
+# Load movies and similarity
 movies, similarity = load_data()
 # ----------------- CSS -----------------
 st.markdown("""
