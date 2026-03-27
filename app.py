@@ -4,6 +4,8 @@ import requests
 import time
 from googleapiclient.discovery import build
 import warnings
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 warnings.filterwarnings("ignore", category=FutureWarning)
 # ----------------- CONFIG -----------------
 st.set_page_config(page_title="Movie Recommender", layout="wide")
@@ -12,7 +14,31 @@ API_KEY = "bf34d9a"  # OMDb API Key
 YOUTUBE_API_KEY = "AIzaSyCtRmuczhLVye3FA7c3j1wvfjXoykoyg_g"  # YouTube Data API Key
 BASE_URL = "http://www.omdbapi.com/"
 PLACEHOLDER = "https://via.placeholder.com/500x750?text=No+Poster"
+# ----------------- LOAD DATA -----------------
+def load_data():
+    # Load the processed dataframe (should contain 'movie_id', 'title', 'tags')
+    movies = pickle.load(open('data/movie_list.pkl', 'rb'))
 
+    # Check if 'tags' column exists; if not, create it from available columns
+    if 'tags' not in movies.columns:
+        # Replace with your actual feature columns
+        feature_cols = []
+        for col in ['genres', 'cast', 'description']:  # adjust these to match your DataFrame
+            if col in movies.columns:
+                feature_cols.append(col)
+        if feature_cols:
+            movies['tags'] = movies[feature_cols].fillna('').agg(' '.join, axis=1)
+        else:
+            movies['tags'] = movies['title'].fillna('')  # fallback if no other columns
+
+    # Generate similarity matrix
+    cv = CountVectorizer(max_features=5000, stop_words='english')
+    vector = cv.fit_transform(movies['tags']).toarray()
+    similarity = cosine_similarity(vector)
+
+    return movies, similarity
+
+movies, similarity = load_data()
 # ----------------- CSS -----------------
 st.markdown("""
 <style>
@@ -34,9 +60,6 @@ input[type="text"] { padding: 10px; width: 100%; border-radius: 5px; border: non
 </style>
 """, unsafe_allow_html=True)
 
-# ----------------- LOAD DATA -----------------
-movies = pickle.load(open('data/movie_list.pkl','rb'))
-similarity = pickle.load(open('data/similarity.pkl','rb'))
 
 # ----------------- SESSION STATE -----------------
 if 'favorites' not in st.session_state:
