@@ -70,6 +70,8 @@ pip install google-api-python-client
 Create a `.env` file in the project root:
 
 OMDB_API_KEY=bf34d9a
+
+
 YOUTUBE_API_KEY=AIzaSyCtRmuczhLVye3FA7c3j1wvfjXoykoyg_g
 
 Update app.py:
